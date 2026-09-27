@@ -1,0 +1,211 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <!-- Comic Room Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b4856"/>
+      <stop offset="40%" stop-color="#4d5b6a"/>
+      <stop offset="100%" stop-color="#2d3744"/>
+    </linearGradient>
+
+    <!-- Wall Texture Diagonal Hatching Pattern -->
+    <pattern id="comicHatch" width="16" height="16" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="16" stroke="#252d38" stroke-width="1.5" opacity="0.35"/>
+    </pattern>
+
+    <!-- Red Suit Gradient -->
+    <linearGradient id="spideyRed" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#f83a3a"/>
+      <stop offset="50%" stop-color="#d62228"/>
+      <stop offset="100%" stop-color="#8a0f14"/>
+    </linearGradient>
+
+    <!-- Blue Suit Gradient -->
+    <linearGradient id="spideyBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34547a"/>
+      <stop offset="60%" stop-color="#1e334d"/>
+      <stop offset="100%" stop-color="#101c2b"/>
+    </linearGradient>
+
+    <!-- Spider Sense Electric Glow -->
+    <filter id="spiderSenseGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur1"/>
+      <feGaussianBlur stdDeviation="10" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Comic Paper Drop Shadow -->
+    <filter id="paperShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- BACKGROUND -->
+  <rect width="500" height="500" fill="url(#bgGrad)"/>
+  <rect width="500" height="500" fill="url(#comicHatch)"/>
+
+  <!-- Dramatic Comic Wall Shadow Bands -->
+  <polygon points="0,0 220,0 0,340" fill="#202731" opacity="0.6"/>
+  <polygon points="320,0 500,0 500,500 240,500" fill="#1b222b" opacity="0.3"/>
+
+  <!-- SCATTERED FLYING RESEARCH PAPERS -->
+  <!-- Paper 1: Upper Right -->
+  <g transform="translate(370, 150) rotate(16)" filter="url(#paperShadow)">
+    <path d="M 0 0 L 85 8 L 70 80 L -15 65 Z" fill="#eaeef4" stroke="#111827" stroke-width="3"/>
+    <line x1="12" y1="18" x2="65" y2="24" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="8" y1="32" x2="60" y2="38" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="5" y1="46" x2="52" y2="52" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Paper 2: Lower Right -->
+  <g transform="translate(385, 335) rotate(-14)" filter="url(#paperShadow)">
+    <path d="M 0 0 L 90 12 L 72 95 L -18 78 Z" fill="#f1f5f9" stroke="#111827" stroke-width="3.5"/>
+    <line x1="15" y1="22" x2="70" y2="30" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="10" y1="38" x2="65" y2="46" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="5" y1="54" x2="55" y2="62" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="0" y1="70" x2="45" y2="76" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- SPIDER-SENSE TINGLING BOLTS (Wavy zig-zag electric white bolts) -->
+  <!-- Sense Bolt 1: Far Left (pointing left-up) -->
+  <path d="M 175 160 Q 140 148 115 118 T 55 92 T -20 60" fill="none" stroke="#67e8f9" stroke-width="12" stroke-linecap="round" opacity="0.4" filter="url(#spiderSenseGlow)"/>
+  <path d="M 175 160 Q 140 148 115 118 T 55 92 T -20 60" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" filter="url(#spiderSenseGlow)"/>
+  <path d="M 175 160 Q 140 148 115 118 T 55 92 T -20 60" fill="none" stroke="#fef08a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Sense Bolt 2: Mid-Left (curving upward-left) -->
+  <path d="M 210 135 Q 185 90 168 55 T 120 -5 T 70 -60" fill="none" stroke="#67e8f9" stroke-width="14" stroke-linecap="round" opacity="0.4" filter="url(#spiderSenseGlow)"/>
+  <path d="M 210 135 Q 185 90 168 55 T 120 -5 T 70 -60" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" filter="url(#spiderSenseGlow)"/>
+  <path d="M 210 135 Q 185 90 168 55 T 120 -5 T 70 -60" fill="none" stroke="#fef08a" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Sense Bolt 3: Center (waving straight up) -->
+  <path d="M 265 120 Q 275 75 250 40 T 280 -15 T 260 -70" fill="none" stroke="#67e8f9" stroke-width="15" stroke-linecap="round" opacity="0.4" filter="url(#spiderSenseGlow)"/>
+  <path d="M 265 120 Q 275 75 250 40 T 280 -15 T 260 -70" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" filter="url(#spiderSenseGlow)"/>
+  <path d="M 265 120 Q 275 75 250 40 T 280 -15 T 260 -70" fill="none" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Sense Bolt 4: Mid-Right (curving upward-right) -->
+  <path d="M 315 130 Q 345 85 370 50 T 425 -5 T 480 -55" fill="none" stroke="#67e8f9" stroke-width="14" stroke-linecap="round" opacity="0.4" filter="url(#spiderSenseGlow)"/>
+  <path d="M 315 130 Q 345 85 370 50 T 425 -5 T 480 -55" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" filter="url(#spiderSenseGlow)"/>
+  <path d="M 315 130 Q 345 85 370 50 T 425 -5 T 480 -55" fill="none" stroke="#fef08a" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Sense Bolt 5: Far Right (pointing right-up) -->
+  <path d="M 345 155 Q 390 140 425 115 T 500 85 T 570 55" fill="none" stroke="#67e8f9" stroke-width="12" stroke-linecap="round" opacity="0.4" filter="url(#spiderSenseGlow)"/>
+  <path d="M 345 155 Q 390 140 425 115 T 500 85 T 570 55" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" filter="url(#spiderSenseGlow)"/>
+  <path d="M 345 155 Q 390 140 425 115 T 500 85 T 570 55" fill="none" stroke="#fef08a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- TORSO & ARMS -->
+  <!-- Left Blue Arm & Shoulder -->
+  <path d="M -20 400 Q 50 370 85 390 L 115 520 L -30 520 Z" fill="url(#spideyBlue)" stroke="#090d14" stroke-width="5"/>
+  <path d="M 40 440 L 75 510 L 45 520 Z" fill="#0b1320" opacity="0.8"/>
+
+  <!-- Blue Rib Lateral Flanks -->
+  <path d="M 60 520 L 75 390 Q 110 375 150 370 L 165 430 Q 180 500 185 520 Z" fill="url(#spideyBlue)" stroke="#090d14" stroke-width="5"/>
+  <path d="M 460 520 L 435 390 Q 400 375 360 370 L 345 430 Q 330 500 325 520 Z" fill="url(#spideyBlue)" stroke="#090d14" stroke-width="5"/>
+
+  <!-- Red Chest & Collar -->
+  <path d="M 75 390 Q 150 360 210 345 L 215 315 Q 260 320 300 315 L 305 345 Q 365 360 435 390 Q 395 460 365 520 L 145 520 Q 115 460 75 390 Z" fill="url(#spideyRed)" stroke="#090d14" stroke-width="5"/>
+
+  <!-- Muscular Shadow & Comic Inking on Torso -->
+  <path d="M 75 390 Q 130 355 190 355 Q 120 395 85 450 Z" fill="#ef4444" opacity="0.45"/>
+  <path d="M 330 460 Q 390 440 430 395 Q 390 460 365 520 Z" fill="#7f1d1d" opacity="0.55"/>
+
+  <!-- CHEST WEB GRID -->
+  <g stroke="#090d14" stroke-width="3" fill="none">
+    <!-- Vertical Radial Lines -->
+    <line x1="258" y1="320" x2="258" y2="430"/>
+    <line x1="258" y1="320" x2="195" y2="400"/>
+    <line x1="258" y1="320" x2="320" y2="400"/>
+    <line x1="258" y1="320" x2="140" y2="445"/>
+    <line x1="258" y1="320" x2="375" y2="445"/>
+    <line x1="258" y1="320" x2="160" y2="505"/>
+    <line x1="258" y1="320" x2="350" y2="505"/>
+
+    <!-- Concentric Web Curved Arcs -->
+    <path d="M 190 375 Q 258 395 325 375"/>
+    <path d="M 160 412 Q 258 438 355 412"/>
+    <path d="M 145 458 Q 258 488 370 458"/>
+    <path d="M 152 505 Q 258 535 360 505"/>
+  </g>
+
+  <!-- ICONIC BLACK SPIDER EMBLEM ON CHEST -->
+  <g transform="translate(258, 452)">
+    <!-- Spider Body & Head -->
+    <ellipse cx="0" cy="2" rx="10" ry="16" fill="#090d14"/>
+    <circle cx="0" cy="-14" r="7.5" fill="#090d14"/>
+
+    <!-- Spider Legs Top Left -->
+    <path d="M -6 -7 Q -30 -30 -42 -16 Q -28 -2 -11 -2" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+    <path d="M -6 0 Q -36 -12 -46 8 Q -30 12 -10 6" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Spider Legs Bottom Left -->
+    <path d="M -6 7 Q -34 24 -40 48 Q -24 38 -9 13" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+    <path d="M -5 14 Q -26 44 -28 66 Q -15 48 -5 20" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Spider Legs Top Right -->
+    <path d="M 6 -7 Q 30 -30 42 -16 Q 28 -2 11 -2" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 6 0 Q 36 -12 46 8 Q 30 12 10 6" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Spider Legs Bottom Right -->
+    <path d="M 6 7 Q 34 24 40 48 Q 24 38 9 13" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 5 14 Q 26 44 28 66 Q 15 48 5 20" fill="none" stroke="#090d14" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- NECK -->
+  <path d="M 218 275 L 212 328 Q 258 338 304 328 L 298 275 Z" fill="url(#spideyRed)" stroke="#090d14" stroke-width="5"/>
+  <!-- Neck Web Lines -->
+  <line x1="258" y1="275" x2="258" y2="334" stroke="#090d14" stroke-width="3"/>
+  <line x1="236" y1="275" x2="231" y2="330" stroke="#090d14" stroke-width="3"/>
+  <line x1="280" y1="275" x2="285" y2="330" stroke="#090d14" stroke-width="3"/>
+  <path d="M 223 302 Q 258 312 293 302" fill="none" stroke="#090d14" stroke-width="3"/>
+
+  <!-- HEAD & MASK (Tilted slightly to express dynamic alert comic pose) -->
+  <g transform="rotate(-3 258 200)">
+    <!-- Mask Outline -->
+    <path d="M 200 190 C 194 115 228 130 258 130 C 288 130 322 115 316 190 C 313 240 295 292 258 296 C 221 292 203 240 200 190 Z" fill="url(#spideyRed)" stroke="#090d14" stroke-width="6"/>
+
+    <!-- Mask Shading & Highlights -->
+    <path d="M 203 180 C 201 130 228 138 253 136 C 228 152 217 198 222 252 C 211 230 204 205 203 180 Z" fill="#fca5a5" opacity="0.4"/>
+    <path d="M 314 180 C 316 225 299 268 268 288 C 294 272 310 235 314 180 Z" fill="#7f1d1d" opacity="0.65"/>
+
+    <!-- Mask Radial Web Lines -->
+    <g stroke="#090d14" stroke-width="2.6" fill="none">
+      <line x1="258" y1="210" x2="258" y2="131"/>
+      <line x1="258" y1="210" x2="234" y2="136"/>
+      <line x1="258" y1="210" x2="282" y2="136"/>
+      <line x1="258" y1="210" x2="214" y2="150"/>
+      <line x1="258" y1="210" x2="302" y2="150"/>
+      <line x1="258" y1="210" x2="202" y2="175"/>
+      <line x1="258" y1="210" x2="314" y2="175"/>
+      <line x1="258" y1="210" x2="202" y2="215"/>
+      <line x1="258" y1="210" x2="314" y2="215"/>
+      <line x1="258" y1="210" x2="210" y2="252"/>
+      <line x1="258" y1="210" x2="306" y2="252"/>
+      <line x1="258" y1="210" x2="232" y2="286"/>
+      <line x1="258" y1="210" x2="284" y2="286"/>
+      <line x1="258" y1="210" x2="258" y2="295"/>
+
+      <!-- Mask Concentric Web Rings -->
+      <path d="M 242 184 Q 258 178 274 184"/>
+      <path d="M 226 168 Q 258 158 290 168"/>
+      <path d="M 210 156 Q 258 142 306 156"/>
+      <path d="M 235 242 Q 258 252 281 242"/>
+      <path d="M 224 262 Q 258 276 292 262"/>
+      <path d="M 236 280 Q 258 288 280 280"/>
+    </g>
+
+    <!-- LEFT SPIDER EYE -->
+    <path d="M 251 202 Q 237 182 210 184 Q 204 210 224 235 Q 242 226 251 202 Z" fill="#090d14"/>
+    <path d="M 248 202 Q 237 188 215 190 Q 211 210 226 229 Q 240 222 248 202 Z" fill="#ffffff" stroke="#f8fafc" stroke-width="1.5"/>
+    <path d="M 215 190 Q 232 188 245 202 Q 236 195 220 195 Z" fill="#cbd5e1"/>
+
+    <!-- RIGHT SPIDER EYE -->
+    <path d="M 265 202 Q 279 182 306 184 Q 312 210 292 235 Q 274 226 265 202 Z" fill="#090d14"/>
+    <path d="M 268 202 Q 279 188 301 190 Q 305 210 290 229 Q 276 222 268 202 Z" fill="#ffffff" stroke="#f8fafc" stroke-width="1.5"/>
+    <path d="M 301 190 Q 284 188 271 202 Q 280 195 296 195 Z" fill="#cbd5e1"/>
+  </g>
+
+  <!-- Heavy Outer Comic Border -->
+  <rect x="8" y="8" width="484" height="484" rx="20" fill="none" stroke="#0f172a" stroke-width="12"/>
+</svg>
