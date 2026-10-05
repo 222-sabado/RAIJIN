@@ -33,9 +33,8 @@ export interface Manuscript {
   keywords: string[];
   abstract: string;
   fullText: string;
-  pdfUrl?: string;
-  pdfDataUrl?: string;
-  fileBase64?: string;
+  fileName?: string; // original upload name, e.g. paper.docx
+  fileDataUrl?: string; // original file as a data URL
   views: number;
   printsCount: number;
   hpcIndexScore?: number;

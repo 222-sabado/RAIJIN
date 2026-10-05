@@ -10,6 +10,7 @@ import {
   INITIAL_SYSTEM_LOGS,
   INITIAL_USAGE_ANALYTICS,
 } from './src/data/mockDatabase.js';
+import { validateUpload, base64ByteSize } from './src/lib/uploadRules.js';
 import { Manuscript, User, PrinterStatus, SystemLog, PrintJob } from './src/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +37,24 @@ const ai = new GoogleGenAI({
   },
 });
 
+const FILE_MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  txt: 'text/plain',
+};
+
+// Builds a data URL with the MIME taken from the file extension.
+function toFileDataUrl(fileName: string, data: string): string | undefined {
+  const mime = FILE_MIME[fileName.toLowerCase().split('.').pop() || ''];
+  return mime ? `data:${mime};base64,${data.slice(data.indexOf(',') + 1)}` : undefined;
+}
+
+// Removes the heavy file payload from list responses.
+function withoutFile<T extends { fileDataUrl?: string }>(m: T): Omit<T, 'fileDataUrl'> {
+  const { fileDataUrl, ...rest } = m;
+  return rest;
+}
+
 function addLog(level: 'INFO' | 'WARN' | 'ERROR' | 'HPC_EVENT', source: string, message: string, details?: string) {
   const newLog: SystemLog = {
     id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -51,9 +70,9 @@ function addLog(level: 'INFO' | 'WARN' | 'ERROR' | 'HPC_EVENT', source: string, 
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json({ limit: '20mb' }));
+  app.use(express.json({ limit: '30mb' }));
   app.use(express.static(path.join(process.cwd(), 'public')));
 
   // --- API ROUTES ---
@@ -186,7 +205,7 @@ async function startServer() {
       if (!searchKeyword) {
         // Default return sorted
         return res.json({
-          manuscripts: filtered.map((m) => ({ ...m, hpcIndexScore: 0.95 })),
+          manuscripts: filtered.map((m) => ({ ...withoutFile(m), hpcIndexScore: 0.95 })),
           totalCount: filtered.length,
           latencyMs: 0.28,
         });
@@ -217,7 +236,7 @@ async function startServer() {
         });
 
         return {
-          ...m,
+          ...withoutFile(m),
           matchScore: score,
           hpcIndexScore: Math.min(0.99, Number((0.5 + score / 100).toFixed(2))),
         };
@@ -297,9 +316,22 @@ Provide a structured, expert answer referencing equations, formulas, methodology
     }
   });
 
-  // 5. Admin Upload & Automated PDF Extraction (Gemini powered)
+  // 5. Admin & Student Upload & Automated Extraction (Gemini powered)
   app.post('/api/manuscripts/upload', async (req, res) => {
-    const { fileName, fileContentBase64, rawText, category, overrideTitle, overrideAuthors, overrideAbstract } = req.body;
+    const { fileName, fileContentBase64, rawText, category, overrideTitle, overrideAuthors, overrideAbstract, uploaderId } = req.body;
+
+    const uploader = users.find((u) => u.id === uploaderId);
+    const uploaderRole = uploader?.role ?? 'student';
+    if (uploaderRole === 'student' && !fileContentBase64) {
+      return res.status(400).json({ error: 'Select a PDF or DOCX file to upload.' });
+    }
+    if (fileContentBase64 && typeof fileContentBase64 !== 'string') {
+      return res.status(400).json({ error: 'fileContentBase64 must be a string.' });
+    }
+    if (fileContentBase64) {
+      const error = validateUpload(String(fileName || ''), base64ByteSize(fileContentBase64), uploaderRole);
+      if (error) return res.status(400).json({ error });
+    }
 
     let extractedTitle = overrideTitle || '';
     let extractedAuthors = overrideAuthors ? overrideAuthors.split(',') : [];
@@ -349,7 +381,7 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
 
     // Default fallbacks
     if (!extractedTitle) extractedTitle = fileName ? fileName.replace(/\.[^/.]+$/, '').replace(/_/g, ' ') : 'New Research Manuscript';
-    if (!extractedAuthors || extractedAuthors.length === 0) extractedAuthors = ['Faculty Researcher', 'Engineering Dept'];
+    if (!extractedAuthors || extractedAuthors.length === 0) extractedAuthors = uploader?.role === 'student' ? [uploader.fullName] : ['Faculty Researcher', 'Engineering Dept'];
     if (!extractedAbstract) extractedAbstract = 'Abstract extracted automatically upon manuscript upload to R.A.I.J.I.N. Engine database.';
     if (!fullTextToUse) fullTextToUse = `${extractedTitle}\n\n${extractedAbstract}\n\n1. INTRODUCTION\nUploaded manuscript document ready for literature indexing across R.A.I.J.I.N. HPC grid nodes.`;
 
@@ -362,13 +394,13 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
       keywords: extractedKeywords,
       abstract: extractedAbstract,
       fullText: fullTextToUse,
-      pdfUrl: `/samples/${fileName || 'manuscript.pdf'}`,
-      pdfDataUrl: fileContentBase64 ? (fileContentBase64.startsWith('data:') ? fileContentBase64 : `data:application/pdf;base64,${fileContentBase64}`) : undefined,
+      fileName: fileContentBase64 ? String(fileName) : undefined,
+      fileDataUrl: fileContentBase64 ? toFileDataUrl(String(fileName), fileContentBase64) : undefined,
       views: 1,
       printsCount: 0,
-      uploadedBy: 'admin_group2',
+      uploadedBy: uploader?.username ?? 'admin_group2',
       createdAt: new Date().toISOString(),
-      fileSize: fileContentBase64 ? `${(fileContentBase64.length / 1024 / 1024).toFixed(1)} MB` : '2.5 MB',
+      fileSize: fileContentBase64 ? `${(base64ByteSize(fileContentBase64) / 1024 / 1024).toFixed(1)} MB` : '2.5 MB',
       pageCount: Math.floor(Math.random() * 8 + 4),
       ragSummary: `Indexed across R.A.I.J.I.N. cluster with keywords: ${extractedKeywords.join(', ')}`,
     };
@@ -377,7 +409,7 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
     usageAnalytics.totalManuscripts += 1;
     addLog('HPC_EVENT', 'Manuscript Indexer', `New manuscript uploaded & indexed: "${extractedTitle}"`, `ID: ${newManuscript.id}`);
 
-    return res.json({ manuscript: newManuscript, message: 'Manuscript successfully uploaded and indexed.' });
+    return res.json({ manuscript: withoutFile(newManuscript), message: 'Manuscript successfully uploaded and indexed.' });
   });
 
   // 6. Admin Manuscript Edit / Delete
@@ -388,14 +420,33 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
 
     manuscripts[index] = { ...manuscripts[index], ...req.body };
     addLog('INFO', 'Manuscript Admin', `Updated document details for "${manuscripts[index].title}"`);
-    return res.json({ manuscript: manuscripts[index] });
+    return res.json({ manuscript: withoutFile(manuscripts[index]) });
+  });
+
+  // Returns the stored original file for the viewer.
+  app.get('/api/manuscripts/:id/file', (req, res) => {
+    const ms = manuscripts.find((m) => m.id === req.params.id);
+    if (!ms?.fileDataUrl) return res.status(404).json({ error: 'File not found' });
+    const comma = ms.fileDataUrl.indexOf(',');
+    const mime = ms.fileDataUrl.slice(5, ms.fileDataUrl.indexOf(';'));
+    const name = (ms.fileName || 'manuscript').replace(/[^\x20-\x7e]|["\\]/g, '_');
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Disposition', `inline; filename="${name}"`);
+    return res.send(Buffer.from(ms.fileDataUrl.slice(comma + 1), 'base64'));
   });
 
   app.delete('/api/manuscripts/:id', (req, res) => {
     const { id } = req.params;
+    const requester = users.find((u) => u.id === req.query.requesterId);
+    if (!requester) return res.status(403).json({ error: 'Not allowed to delete this manuscript.' });
     const ms = manuscripts.find((m) => m.id === id);
+    if (!ms) return res.status(404).json({ error: 'Manuscript not found' });
+    if (requester.role !== 'admin' && ms.uploadedBy !== requester.username) {
+      return res.status(403).json({ error: 'Students may delete only their own uploads.' });
+    }
     manuscripts = manuscripts.filter((m) => m.id !== id);
-    if (ms) addLog('WARN', 'Manuscript Admin', `Deleted manuscript document: "${ms.title}"`);
+    for (const uid of Object.keys(userHistory)) userHistory[uid] = userHistory[uid].filter((h) => h.manuscriptId !== id);
+    addLog('WARN', 'Manuscript Admin', `Deleted manuscript document: "${ms.title}"`);
     return res.json({ success: true, message: 'Manuscript removed.' });
   });
 
@@ -404,7 +455,7 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
     const { userId } = req.params;
     const bookmarkedIds = userBookmarks[userId] || [];
     const bookmarkedList = manuscripts.filter((m) => bookmarkedIds.includes(m.id));
-    return res.json({ bookmarks: bookmarkedList });
+    return res.json({ bookmarks: bookmarkedList.map(withoutFile) });
   });
 
   app.post('/api/user/:userId/bookmarks', (req, res) => {
@@ -432,7 +483,7 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
     const historyEntries = userHistory[userId] || [];
     const fullHistory = historyEntries.map((h) => {
       const ms = manuscripts.find((m) => m.id === h.manuscriptId);
-      return { ...h, manuscript: ms };
+      return { ...h, manuscript: ms && withoutFile(ms) };
     });
     return res.json({ history: fullHistory });
   });
@@ -571,7 +622,8 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Express Server Error:', err);
     if (!res.headersSent) {
-      res.status(500).json({ error: err?.message || 'Internal Server Error' });
+      const status = err?.status >= 400 && err?.status < 600 ? err.status : 500;
+      res.status(status).json({ error: err?.message || 'Internal Server Error' });
     }
   });
 

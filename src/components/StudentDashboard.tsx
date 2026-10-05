@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Manuscript, EngineeringDiscipline, PrinterStatus } from '../types';
 import { safeFetchJson } from '../lib/api';
+import { canDeleteManuscript } from '../lib/fileKind';
 import { ProfileTab } from './ProfileTab';
 import { PrinterTelemetryCard } from './PrinterTelemetryCard';
 import { PrintModal } from './PrintModal';
 import { PdfManuscriptViewer } from './PdfManuscriptViewer';
+import { ManuscriptUploadSection } from './ManuscriptUploadSection';
 import { 
   Search, 
   User as UserIcon, 
@@ -25,7 +27,10 @@ import {
   Sliders, 
   ChevronRight, 
   Zap, 
-  Layers
+  Layers,
+  Upload,
+  X,
+  Trash2,
 } from 'lucide-react';
 
 interface StudentDashboardProps {
@@ -55,6 +60,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [searchLatency, setSearchLatency] = useState('0.24');
+  const [showUpload, setShowUpload] = useState(false);
 
   // Selected Manuscript for Detail/Reader View
   const [selectedManuscript, setSelectedManuscript] = useState<Manuscript | null>(null);
@@ -81,8 +87,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     'Mechanical',
   ];
 
+  // Latest search id; older responses are ignored
+  const searchSeq = useRef(0);
+
   // Fetch Manuscripts on search query or tag change
   const fetchManuscripts = async (queryStr = searchQuery, category = selectedDiscipline) => {
+    const seq = ++searchSeq.current;
     setLoadingSearch(true);
     try {
       const data = await safeFetchJson('/api/manuscripts/search', {
@@ -90,6 +100,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: queryStr, category, sortBy: 'relevance' }),
       });
+      if (seq !== searchSeq.current) return;
       if (data && data.manuscripts) {
         setManuscripts(data.manuscripts);
         if (data.latencyMs) setSearchLatency(data.latencyMs);
@@ -97,7 +108,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     } catch (e) {
       console.error(e);
     } finally {
-      setLoadingSearch(false);
+      if (seq === searchSeq.current) setLoadingSearch(false);
     }
   };
 
@@ -147,6 +158,23 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       loadUserData();
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  // Delete an own upload, then refresh all lists
+  const handleDeleteManuscript = async (ms: Manuscript) => {
+    if (!confirm(`Delete "${ms.title}" from the kiosk database?`)) return;
+    try {
+      const res = await fetch(`/api/manuscripts/${ms.id}?requesterId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || 'The manuscript could not be deleted.');
+        return;
+      }
+      setSelectedManuscript(null);
+      await Promise.all([fetchManuscripts(searchQuery, selectedDiscipline), loadUserData()]);
+    } catch (e) {
+      alert('The manuscript could not be deleted.');
     }
   };
 
@@ -344,6 +372,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             }}
             isBookmarked={bookmarks.some((b) => b.id === selectedManuscript.id)}
             onToggleBookmark={handleToggleBookmark}
+            onDelete={canDeleteManuscript(selectedManuscript, user) ? handleDeleteManuscript : undefined}
           />
         ) : activeTab === 'search' ? (
           
@@ -362,6 +391,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     RESEARCH LITERATURE KIOSK
                   </h2>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowUpload((open) => !open)}
+                  className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shrink-0 ${
+                    showUpload
+                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                      : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30'
+                  }`}
+                >
+                  {showUpload ? <X className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+                  <span>{showUpload ? 'Close Upload' : 'Upload Manuscript'}</span>
+                </button>
               </div>
 
               <form onSubmit={handleSearchSubmit} className="relative pt-2">
@@ -425,15 +466,24 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
             </div>
 
+            {showUpload && (
+              <ManuscriptUploadSection
+                userRole="student"
+                uploaderId={user.id}
+                onUploadSuccess={() => fetchManuscripts(searchQuery, selectedDiscipline)}
+                onViewManuscript={(ms) => { setShowUpload(false); handleOpenManuscript(ms); }}
+              />
+            )}
+
             {/* HPC Literature Results Metadata Bar */}
-            <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-bold">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-slate-400 px-1 font-bold">
               <div>
                 Showing <strong className="text-white font-black">{manuscripts.length}</strong> manuscripts
                 {selectedDiscipline !== 'All' && <span> in <strong className="text-indigo-400 font-black">{selectedDiscipline}</strong></span>}
               </div>
               <div className="flex items-center space-x-2">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>HPC Vector Retrieval Latency: <strong className="text-white font-mono">{searchLatency} ms</strong></span>
+                <span>HPC Vector Retrieval Latency: <strong className="text-white font-mono whitespace-nowrap">{searchLatency} ms</strong></span>
               </div>
             </div>
 
@@ -529,8 +579,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       </div>
 
                       {/* Card Actions Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 text-xs">
-                        <div className="flex items-center space-x-4 text-slate-400 text-[11px] font-medium">
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/80 text-xs">
+                        <div className="flex items-center space-x-4 text-slate-400 text-[11px] font-medium whitespace-nowrap">
                           <span className="flex items-center gap-1">
                             <Eye className="w-3.5 h-3.5" /> {ms.views} views
                           </span>
@@ -540,9 +590,19 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         </div>
 
                         <div className="flex items-center space-x-2">
+                          {canDeleteManuscript(ms, user) && (
+                            <button
+                              onClick={() => handleDeleteManuscript(ms)}
+                              className="px-3 py-2 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center space-x-1 whitespace-nowrap"
+                              title="Delete this manuscript"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleOpenManuscript(ms)}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-1"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center space-x-1 whitespace-nowrap"
                           >
                             <span>Read Full Text</span>
                             <ChevronRight className="w-3 h-3" />

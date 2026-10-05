@@ -1,16 +1,23 @@
 import React, { useState, useRef } from 'react';
-import { EngineeringDiscipline, Manuscript } from '../types';
+import { EngineeringDiscipline, Manuscript, UserRole } from '../types';
+import { UPLOAD_RULES, validateUpload } from '../lib/uploadRules';
 import { Upload, FileText, Sparkles, CheckCircle2, AlertCircle, FileUp, X, RefreshCw } from 'lucide-react';
 
 interface ManuscriptUploadSectionProps {
   onUploadSuccess?: (newManuscript: Manuscript) => void;
-  userRole?: 'admin';
+  onViewManuscript?: (manuscript: Manuscript) => void;
+  userRole?: UserRole;
+  uploaderId: string;
 }
 
-export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = ({
+export const ManuscriptUploadSection = ({
   onUploadSuccess,
+  onViewManuscript,
   userRole = 'admin',
-}) => {
+  uploaderId,
+}: ManuscriptUploadSectionProps) => {
+  const rules = UPLOAD_RULES[userRole];
+  const maxMb = rules.maxBytes / 1024 / 1024;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [category, setCategory] = useState<EngineeringDiscipline>('Electrical');
@@ -32,8 +39,9 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
     setSuccessMsg('');
     setUploadedManuscript(null);
 
-    if (!file.name.endsWith('.pdf') && !file.name.endsWith('.txt')) {
-      setErrorMsg('Please select a valid PDF document (.pdf) or text manuscript (.txt).');
+    const error = validateUpload(file.name, file.size, userRole);
+    if (error) {
+      setErrorMsg(error);
       return;
     }
 
@@ -41,7 +49,7 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
 
     // Read text snippet from file if plain text or read base64 for PDF
     const reader = new FileReader();
-    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+    if (file.name.toLowerCase().endsWith('.txt')) {
       reader.onload = (e) => {
         const text = e.target?.result as string;
         setUploadRawText(text || '');
@@ -49,11 +57,11 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
       };
       reader.readAsText(file);
     } else {
-      // PDF file read as data URL
+      // PDF or DOCX file read as data URL
       reader.onload = (e) => {
         const result = e.target?.result as string;
         setFileBase64(result);
-        setUploadRawText(`Uploaded academic manuscript PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB).\nIndexed for R.A.I.J.I.N. RAG analysis.`);
+        setUploadRawText(`Uploaded academic manuscript: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB).\nIndexed for R.A.I.J.I.N. RAG analysis.`);
       };
       reader.readAsDataURL(file);
     }
@@ -102,6 +110,7 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
           overrideTitle,
           overrideAuthors,
           overrideAbstract,
+          uploaderId,
         }),
       });
 
@@ -131,16 +140,16 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className={`space-y-6 ${userRole === 'admin' ? 'max-w-4xl mx-auto' : ''}`}>
       <div>
         <span className="text-xs font-bold text-indigo-400 tracking-wider uppercase italic block mb-1">
           {userRole === 'admin' ? 'FACULTY MANUSCRIPT INDEXING' : 'STUDENT RESEARCH SUBMISSION'}
         </span>
         <h2 className="text-2xl sm:text-3xl font-black text-white uppercase italic flex items-center gap-2">
-          <Upload className="w-6 h-6 text-indigo-400" /> Upload & Index PDF Research Manuscript
+          <Upload className="w-6 h-6 text-indigo-400" /> Upload & Index Research Manuscript
         </h2>
         <p className="text-xs text-slate-400 mt-1 font-medium">
-          Uploaded PDF research documents will be processed by server-side Gemini AI to automatically extract titles, authors, engineering domain, and RAG search vectors.
+          Uploaded research documents will be processed by server-side Gemini AI to automatically extract titles, authors, engineering domain, and RAG search vectors.
         </p>
       </div>
 
@@ -156,10 +165,10 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
               <div className="text-slate-200">
                 <span className="text-emerald-300 font-extrabold uppercase">Indexed Title:</span> {uploadedManuscript.title}
               </div>
-              {onUploadSuccess && (
+              {(onViewManuscript || onUploadSuccess) && (
                 <button
                   type="button"
-                  onClick={() => onUploadSuccess(uploadedManuscript)}
+                  onClick={() => (onViewManuscript ?? onUploadSuccess)?.(uploadedManuscript)}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] uppercase tracking-wider rounded-xl transition-all shadow-md"
                 >
                   View Manuscript Now →
@@ -196,11 +205,12 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
           <input
             type="file"
             ref={fileInputRef}
-            accept=".pdf,.txt,application/pdf,text/plain"
+            accept={rules.extensions.join(',')}
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
                 handleFileChange(e.target.files[0]);
               }
+              e.target.value = '';
             }}
             className="hidden"
           />
@@ -221,6 +231,7 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedFile(null);
+                  setFileBase64(null);
                   setUploadRawText('');
                 }}
                 className="mt-2 text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1 mx-auto"
@@ -235,9 +246,9 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
               </div>
               <div>
                 <p className="text-sm font-black uppercase tracking-wider text-slate-100">
-                  Click to select or Drag & Drop PDF Research Manuscript
+                  Click to select or Drag & Drop Research Manuscript
                 </p>
-                <p className="text-xs text-slate-400 mt-1">Supports PDF (.pdf) or Plain Text (.txt) formats up to 20MB</p>
+                <p className="text-xs text-slate-400 mt-1">Supports {rules.label} formats up to {maxMb} MB</p>
               </div>
               <span className="inline-block px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
                 Browse Files
@@ -321,7 +332,7 @@ export const ManuscriptUploadSection: React.FC<ManuscriptUploadSectionProps> = (
         {/* SUBMIT BUTTON */}
         <button
           type="submit"
-          disabled={uploading}
+          disabled={uploading || (userRole === 'student' && !selectedFile)}
           className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-wider rounded-2xl text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
         >
           {uploading ? (

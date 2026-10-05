@@ -117,7 +117,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleDeleteManuscript = async (id: string) => {
     if (!confirm('Are you sure you want to delete this manuscript from the kiosk database?')) return;
     try {
-      await safeFetchJson(`/api/manuscripts/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/manuscripts/${id}?requesterId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || 'The manuscript could not be deleted.');
+        return;
+      }
       loadAdminData();
     } catch (e) {
       console.error(e);
@@ -478,6 +483,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           /* SECTION 2: UPLOAD MANUSCRIPT TAB (PDF Auto-Extract + Gemini) */
           <ManuscriptUploadSection
             userRole="admin"
+            uploaderId={user.id}
             onUploadSuccess={() => loadAdminData()}
           />
         ) : activeAdminTab === 'analytics' ? (
