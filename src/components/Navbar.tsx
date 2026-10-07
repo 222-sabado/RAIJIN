@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-black text-xl tracking-tight text-white uppercase italic">R.A.I.J.I.N.</span>
-              <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-black px-2.5 py-0.5 rounded border border-indigo-500/30 flex items-center gap-1 uppercase tracking-wider">
+              <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-black px-2.5 py-0.5 rounded border border-indigo-500/30 hidden sm:flex items-center whitespace-nowrap gap-1 uppercase tracking-wider">
                 <Cpu className="w-3 h-3 text-indigo-400" /> HPC Grid RAG
               </span>
             </div>

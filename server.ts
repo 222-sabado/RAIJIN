@@ -11,6 +11,9 @@ import {
   INITIAL_USAGE_ANALYTICS,
 } from './src/data/mockDatabase.js';
 import { validateUpload, base64ByteSize } from './src/lib/uploadRules.js';
+import { createChatStore, runChatTurn } from './src/lib/chatServer.js';
+import { placeholderChatBackend, type ChatBackend } from './src/lib/chatBackend.js';
+import { encodeChatEvent } from './src/lib/chat.js';
 import { Manuscript, User, PrinterStatus, SystemLog, PrintJob } from './src/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +29,8 @@ let usageAnalytics = { ...INITIAL_USAGE_ANALYTICS };
 let userBookmarks: Record<string, string[]> = {};
 let userHistory: Record<string, { manuscriptId: string; timestamp: string }[]> = {};
 let userPrints: Record<string, PrintJob[]> = {};
+const chatStore = createChatStore();
+const chatBackend: ChatBackend = placeholderChatBackend;
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({
@@ -501,6 +506,70 @@ ${rawText ? rawText.slice(0, 4000) : fileName}`;
     if (userHistory[userId].length > 30) userHistory[userId].pop();
 
     return res.json({ success: true });
+  });
+
+  // Chat routes (students only)
+  const isStudent = (userId: string) => users.some((u) => u.id === userId && u.role === 'student');
+  const NO_USER = { error: 'User not found.' };
+  const NO_CHAT = { error: 'Chat not found.' };
+
+  app.get('/api/user/:userId/chats', (req, res) => {
+    const { userId } = req.params;
+    if (!isStudent(userId)) return res.status(404).json(NO_USER);
+    return res.json({ conversations: chatStore.list(userId), backend: chatBackend.status });
+  });
+
+  app.get('/api/user/:userId/chats/:chatId', (req, res) => {
+    const { userId, chatId } = req.params;
+    if (!isStudent(userId)) return res.status(404).json(NO_USER);
+    const conversation = chatStore.get(userId, chatId);
+    return conversation ? res.json({ conversation }) : res.status(404).json(NO_CHAT);
+  });
+
+  app.delete('/api/user/:userId/chats/:chatId', (req, res) => {
+    const { userId, chatId } = req.params;
+    if (!isStudent(userId)) return res.status(404).json(NO_USER);
+    return chatStore.remove(userId, chatId) ? res.json({ ok: true }) : res.status(404).json(NO_CHAT);
+  });
+
+  app.post('/api/user/:userId/chats/messages', async (req, res) => {
+    const { userId } = req.params;
+    if (!isStudent(userId)) return res.status(404).json(NO_USER);
+    const cid = req.body?.conversationId;
+    if (cid != null && typeof cid !== 'string') return res.status(400).json({ error: 'conversationId must be a string.' });
+    const controller = new AbortController();
+    res.on('close', () => {
+      if (!res.writableFinished) controller.abort();
+    });
+    const write = (line: string) => {
+      if (!res.writableEnded && !res.destroyed) res.write(line);
+    };
+    try {
+      const result = await runChatTurn({
+        store: chatStore,
+        backend: chatBackend,
+        userId,
+        conversationId: cid ?? undefined,
+        text: req.body?.text,
+        signal: controller.signal,
+        emit: (event) => {
+          if (!res.headersSent) {
+            res.status(200);
+            res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.flushHeaders();
+          }
+          write(encodeChatEvent(event));
+        },
+      });
+      if ('error' in result && !res.headersSent) return res.status(result.status).json({ error: result.error });
+      if (!res.writableEnded) res.end();
+    } catch (err: any) {
+      console.error('Chat route error:', err?.name);
+      if (!res.headersSent) return res.status(500).json({ error: 'The chat service failed.' });
+      write(encodeChatEvent({ type: 'error', error: 'The chat service failed.' }));
+      if (!res.writableEnded) res.end();
+    }
   });
 
   // 8. Printing Action & Kiosk Hardware Simulation

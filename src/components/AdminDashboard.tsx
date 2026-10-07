@@ -167,7 +167,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
+    <div className="min-h-[calc(100dvh-4.0625rem)] bg-slate-950 text-slate-100 flex flex-col md:flex-row">
       
       {/* ADMIN SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0 flex flex-col justify-between">
@@ -262,7 +262,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <button
           onClick={onLogout}
-          className="w-full py-3 bg-slate-950 hover:bg-red-500/10 hover:text-red-400 border border-slate-800 text-slate-400 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+          className="w-full mt-6 py-3 bg-slate-950 hover:bg-red-500/10 hover:text-red-400 border border-slate-800 text-slate-400 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
         >
           Exit Admin Dashboard
         </button>

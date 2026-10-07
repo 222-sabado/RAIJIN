@@ -6,6 +6,7 @@ import { ProfileTab } from './ProfileTab';
 import { PrinterTelemetryCard } from './PrinterTelemetryCard';
 import { PrintModal } from './PrintModal';
 import { PdfManuscriptViewer } from './PdfManuscriptViewer';
+import { ChatTab } from './ChatTab';
 import { ManuscriptUploadSection } from './ManuscriptUploadSection';
 import { 
   Search, 
@@ -31,6 +32,7 @@ import {
   Upload,
   X,
   Trash2,
+  MessageSquare,
 } from 'lucide-react';
 
 interface StudentDashboardProps {
@@ -52,7 +54,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onToggleConnection,
   onConfirmPrint,
 }) => {
-  const [activeTab, setActiveTab] = useState<'search' | 'profile' | 'bookmarks' | 'history' | 'prints' | 'printer' | 'settings'>('search');
+  const [activeTab, setActiveTab] = useState<'chat' | 'search' | 'profile' | 'bookmarks' | 'history' | 'prints' | 'printer' | 'settings'>('search');
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -224,7 +226,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
+    <div className="min-h-[calc(100dvh-4.0625rem)] bg-slate-950 text-slate-100 flex flex-col md:flex-row">
       
       {/* LEFT SIDEBAR NAVIGATION */}
       <aside className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0 flex flex-col justify-between">
@@ -250,6 +252,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
           {/* Navigation Items */}
           <nav className="space-y-1.5 text-xs font-extrabold uppercase tracking-wider">
+            <button
+              onClick={() => { setActiveTab('chat'); setSelectedManuscript(null); }}
+              className={`w-full px-3.5 py-3 rounded-xl flex items-center space-x-3 transition-all ${
+                activeTab === 'chat' && !selectedManuscript
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-black'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Chat</span>
+            </button>
+
             <button
               onClick={() => { setActiveTab('search'); setSelectedManuscript(null); }}
               className={`w-full px-3.5 py-3 rounded-xl flex items-center space-x-3 transition-all ${
@@ -374,6 +388,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             onToggleBookmark={handleToggleBookmark}
             onDelete={canDeleteManuscript(selectedManuscript, user) ? handleDeleteManuscript : undefined}
           />
+        ) : activeTab === 'chat' ? (
+          <ChatTab user={user} />
         ) : activeTab === 'search' ? (
           
           /* VIEW 2: SEARCH DASHBOARD (BOLD TYPOGRAPHY STYLE) */
